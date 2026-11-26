@@ -18,7 +18,6 @@ import {
 import {
   getHistoryPage,
   getIssuePage,
-  getReportsPage,
   getReturnPage,
   getScrapPage,
   postIssueAsset,
@@ -69,10 +68,8 @@ router.post("/return", asyncHandler(postReturnAsset));
 router.get("/scrap", asyncHandler(getScrapPage));
 router.post("/scrap", asyncHandler(postScrapAsset));
 
-// 8. Asset History & Reports
+// 8. Asset History
 router.get("/history", asyncHandler(getHistoryPage));
 router.get("/history/:id", asyncHandler(getHistoryPage));
-router.get("/reports", asyncHandler(getReportsPage));
-router.get("/reports/history/:id", asyncHandler(getHistoryPage));
 
 export default router;

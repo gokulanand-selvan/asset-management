@@ -82,7 +82,6 @@ test('All main pages render with HTTP 200', async () => {
     '/return',
     '/scrap',
     '/history',
-    '/reports',
   ];
 
   for (const r of routes) {
@@ -91,9 +90,9 @@ test('All main pages render with HTTP 200', async () => {
   }
 });
 
-test('Scrapped assets are excluded from all pages except Reports', async () => {
+test('Scrapped assets are excluded from active pages and viewable in Asset History', async () => {
   const scrappedTag = 'AST-1009';
-  const hiddenRoutes = ['/assets', '/stock', '/issue', '/return', '/scrap', '/history'];
+  const hiddenRoutes = ['/assets', '/stock', '/issue', '/return', '/scrap'];
 
   for (const r of hiddenRoutes) {
     const res = await request(r);
@@ -105,27 +104,16 @@ test('Scrapped assets are excluded from all pages except Reports', async () => {
     );
   }
 
-  const reportsRes = await request('/reports');
-  assert.equal(reportsRes.status, 200);
-  assert.equal(
-    reportsRes.body.includes(scrappedTag),
-    true,
-    `Scrapped asset ${scrappedTag} MUST appear on /reports`
-  );
-
   const scrappedAsset = await Asset.findOne({ where: { assetTag: scrappedTag } });
   assert.ok(scrappedAsset);
 
-  const directHistory = await request(`/history/${scrappedAsset.id}`);
-  assert.equal(directHistory.status, 302);
-
-  const reportHistory = await request(`/reports/history/${scrappedAsset.id}`);
-  assert.equal(reportHistory.status, 200);
-  assert.equal(reportHistory.body.includes('PURCHASED'), true);
-  assert.equal(reportHistory.body.includes('SCRAPPED'), true);
+  const historyRes = await request(`/history/${scrappedAsset.id}`);
+  assert.equal(historyRes.status, 200);
+  assert.equal(historyRes.body.includes('PURCHASED'), true);
+  assert.equal(historyRes.body.includes('SCRAPPED'), true);
 });
 
-test('End-to-end asset lifecycle: create -> issue -> return -> scrap -> reports', async () => {
+test('End-to-end asset lifecycle: create -> issue -> return -> scrap -> history', async () => {
   const category = await AssetCategory.findOne();
   const employee = await Employee.findOne({ where: { status: 'active' } });
   assert.ok(category && employee);
@@ -203,8 +191,9 @@ test('End-to-end asset lifecycle: create -> issue -> return -> scrap -> reports'
   const assetsAfterScrap = await request('/assets');
   assert.equal(assetsAfterScrap.body.includes(uniqueTag), false);
 
-  const reportsAfterScrap = await request('/reports');
-  assert.equal(reportsAfterScrap.body.includes(uniqueTag), true);
+  const historyAfterScrap = await request(`/history/${createdAsset.id}`);
+  assert.equal(historyAfterScrap.status, 200);
+  assert.equal(historyAfterScrap.body.includes(uniqueTag), true);
 
   await AssetTransaction.destroy({ where: { assetId: createdAsset.id } });
   await createdAsset.destroy();

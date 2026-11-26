@@ -1,26 +1,20 @@
 extends ../layout.jade
 
 block content
-  if !fromReports
-    .card.mb-4
-      .card-body
-        .row.g-3.align-items-center
-          .col-md-4
-            label.form-label.fw-semibold.mb-1 Select Active Asset
-            .small.text-muted Scrapped assets can be inspected from Reports.
-          .col-md-8
-            select#historyAssetPicker.form-select
-              option(value="") -- Select an Asset (Unique ID / Serial / Make & Model) --
-              each a in activeAssets
-                option(
-                  value=a.id,
-                  selected=(selectedAsset && selectedAsset.id === a.id)
-                )= `${a.assetTag} | ${a.serialNumber} | ${a.make} ${a.model} (${formatStatusLabel(a.status)})`
-  else
-    .mb-3
-      a.btn.btn-sm.btn-outline-secondary(href="/reports")
-        i.bi.bi-arrow-left.me-1
-        | Back to Reports
+  .card.mb-4
+    .card-body
+      .row.g-3.align-items-center
+        .col-md-4
+          label.form-label.fw-semibold.mb-1 Select Asset
+          .small.text-muted View full lifecycle from purchase to scrap.
+        .col-md-8
+          select#historyAssetPicker.form-select
+            option(value="") -- Select an Asset (Unique ID / Serial / Make & Model) --
+            each a in assets
+              option(
+                value=a.id,
+                selected=(selectedAsset && selectedAsset.id === a.id)
+              )= `${a.assetTag} | ${a.serialNumber} | ${a.make} ${a.model} (${formatStatusLabel(a.status)})`
 
   if !selectedAsset
     .card

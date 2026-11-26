@@ -314,7 +314,7 @@ export async function postScrapAsset(req: Request, res: Response): Promise<void>
       res,
       '/scrap',
       'success',
-      `Asset ${asset.assetTag} marked as obsolete/scrapped and hidden from all pages except Reports.`
+      `Asset ${asset.assetTag} marked as obsolete/scrapped and hidden from active pages.`
     );
   } catch (err: unknown) {
     await t.rollback();
@@ -324,8 +324,7 @@ export async function postScrapAsset(req: Request, res: Response): Promise<void>
 }
 
 export async function getHistoryPage(req: Request, res: Response): Promise<void> {
-  const activeAssets = await Asset.findAll({
-    where: { status: { [Op.ne]: 'scrapped' } },
+  const assets = await Asset.findAll({
     include: [
       { model: AssetCategory, as: 'category' },
       { model: Employee, as: 'currentEmployee' },
@@ -338,16 +337,14 @@ export async function getHistoryPage(req: Request, res: Response): Promise<void>
     res.render('lifecycle/history', {
       title: 'Asset History',
       activePage: 'history',
-      activeAssets,
+      assets,
       selectedAsset: null,
       transactions: [],
       metrics: null,
-      fromReports: false,
     });
     return;
   }
 
-  const fromReports = req.path.startsWith('/reports/');
   const selectedAsset = await Asset.findByPk(selectedId, {
     include: [
       { model: AssetCategory, as: 'category' },
@@ -357,17 +354,6 @@ export async function getHistoryPage(req: Request, res: Response): Promise<void>
 
   if (!selectedAsset) {
     redirectWithAlert(res, '/history', 'danger', 'Asset not found.');
-    return;
-  }
-
-  // Scrapped assets are only visible inside Reports
-  if (selectedAsset.status === 'scrapped' && !fromReports) {
-    redirectWithAlert(
-      res,
-      '/history',
-      'warning',
-      'Scrapped assets are only visible in Reports.'
-    );
     return;
   }
 
@@ -384,62 +370,10 @@ export async function getHistoryPage(req: Request, res: Response): Promise<void>
 
   res.render('lifecycle/history', {
     title: `Asset History - ${selectedAsset.assetTag}`,
-    activePage: fromReports ? 'reports' : 'history',
-    activeAssets,
+    activePage: 'history',
+    assets,
     selectedAsset,
     transactions,
     metrics,
-    fromReports,
-  });
-}
-
-export async function getReportsPage(req: Request, res: Response): Promise<void> {
-  const allAssets = await Asset.findAll({
-    include: [
-      { model: AssetCategory, as: 'category' },
-      { model: Employee, as: 'currentEmployee' },
-      { model: AssetTransaction, as: 'transactions' },
-    ],
-    order: [['assetTag', 'ASC']],
-  });
-
-  const utilizationRows = allAssets.map((asset) => {
-    const metrics = calculateAssetUtilization(asset, asset.transactions || []);
-    return { asset, metrics };
-  });
-
-  const scrappedRows = utilizationRows.filter(
-    (row) => row.asset.status === 'scrapped'
-  );
-
-  const summary = utilizationRows.reduce(
-    (acc, row) => {
-      acc.totalPurchaseCost += row.metrics.purchaseCost;
-      acc.totalSalvageValue += row.metrics.salvageValue;
-      acc.totalNetCost += row.metrics.netCost;
-      if (row.asset.status === 'scrapped') {
-        acc.scrappedCount += 1;
-        acc.scrappedWriteOff += row.metrics.netCost;
-      } else {
-        acc.activeCount += 1;
-      }
-      return acc;
-    },
-    {
-      activeCount: 0,
-      scrappedCount: 0,
-      totalPurchaseCost: 0,
-      totalSalvageValue: 0,
-      totalNetCost: 0,
-      scrappedWriteOff: 0,
-    }
-  );
-
-  res.render('reports/index', {
-    title: 'Reports',
-    activePage: 'reports',
-    utilizationRows,
-    scrappedRows,
-    summary,
   });
 }
