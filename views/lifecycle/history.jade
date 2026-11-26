@@ -1,0 +1,120 @@
+extends ../layout.jade
+
+block content
+  if !fromReports
+    .card.mb-4
+      .card-body
+        .row.g-3.align-items-center
+          .col-md-4
+            label.form-label.fw-semibold.mb-1 Select Active Asset
+            .small.text-muted Scrapped assets can be inspected from Reports.
+          .col-md-8
+            select#historyAssetPicker.form-select
+              option(value="") -- Select an Asset (Unique ID / Serial / Make & Model) --
+              each a in activeAssets
+                option(
+                  value=a.id,
+                  selected=(selectedAsset && selectedAsset.id === a.id)
+                )= `${a.assetTag} | ${a.serialNumber} | ${a.make} ${a.model} (${formatStatusLabel(a.status)})`
+  else
+    .mb-3
+      a.btn.btn-sm.btn-outline-secondary(href="/reports")
+        i.bi.bi-arrow-left.me-1
+        | Back to Reports
+
+  if !selectedAsset
+    .card
+      .card-body.text-center.py-5
+        i.bi.bi-clock-history.display-4.text-muted.mb-3.d-block
+        h5 Select an asset above to view its full lifecycle and investment utilization
+  else
+    .card.mb-4
+      .card-body
+        .d-flex.flex-wrap.justify-content-between.align-items-start.gap-3
+          div
+            .d-flex.align-items-center.gap-2.mb-1
+              span.code-pill.fs-6= selectedAsset.assetTag
+              span.badge.badge-status(class=`badge-${selectedAsset.status}`)= formatStatusLabel(selectedAsset.status)
+              if selectedAsset.category
+                span.badge.bg-light.text-dark.border= selectedAsset.category.name
+            h4.fw-bold.mb-1 #{selectedAsset.make} #{selectedAsset.model}
+            .text-muted.small
+              | Serial No: 
+              span.font-monospace= selectedAsset.serialNumber
+              |  • Purchased: #{selectedAsset.purchaseDate}
+              |  • Branch: #{selectedAsset.branch}
+              if selectedAsset.currentEmployee
+                |  • Current Custodian: 
+                strong #{selectedAsset.currentEmployee.firstName} #{selectedAsset.currentEmployee.lastName}
+          .text-md-end
+            .small.text-muted Utilization Rate
+            .display-6.fw-bold.text-primary #{metrics.utilizationPercent}%
+            .small.text-muted #{metrics.daysIssued} of #{metrics.totalOwnershipDays} days issued
+
+    .row.g-3.mb-4
+      .col-sm-6.col-xl-3
+        .card.kpi-card
+          .card-body
+            .kpi-label Purchase Cost
+            .kpi-value= formatCurrency(metrics.purchaseCost)
+            .small.text-muted Purchased #{selectedAsset.purchaseDate}
+      .col-sm-6.col-xl-3
+        .card.kpi-card.kpi-success
+          .card-body
+            .kpi-label Net Cost
+            .kpi-value= formatCurrency(metrics.netCost)
+            .small.text-muted Salvage recovered: #{formatCurrency(metrics.salvageValue)}
+      .col-sm-6.col-xl-3
+        .card.kpi-card.kpi-info
+          .card-body
+            .kpi-label Cost / Issued Day
+            .kpi-value= metrics.costPerIssuedDay !== null ? formatCurrency(metrics.costPerIssuedDay) : 'N/A'
+            .small.text-muted #{metrics.totalAssignments} assignment(s)
+      .col-sm-6.col-xl-3
+        .card.kpi-card.kpi-dark
+          .card-body
+            .kpi-label Ownership Span
+            .kpi-value #{metrics.totalOwnershipDays} days
+            .small.text-muted= selectedAsset.status === 'scrapped' ? `Scrapped on ${selectedAsset.scrappedAt}` : 'Active asset'
+
+    .card
+      .card-header
+        i.bi.bi-diagram-3.me-2.text-primary
+        | Lifecycle Timeline (#{transactions.length} events)
+      .card-body
+        if transactions.length === 0
+          p.text-muted.mb-0 No lifecycle events recorded.
+        else
+          .timeline
+            each tx in transactions
+              .timeline-item
+                .timeline-marker(class=`tx-${tx.actionType}`)
+                .timeline-card
+                  .d-flex.flex-wrap.justify-content-between.align-items-center.gap-2.mb-1
+                    div
+                      span.badge.bg-dark.me-2= tx.actionType
+                      strong= tx.transactionDate
+                    if toNumber(tx.costImpact, 0) > 0
+                      span.badge.bg-light.text-dark.border
+                        | Value: #{formatCurrency(tx.costImpact)}
+                  .row.g-2.small
+                    if tx.employee
+                      .col-md-4
+                        strong Employee: 
+                        | #{tx.employee.firstName} #{tx.employee.lastName} (#{tx.employee.employeeCode})
+                    if tx.branch
+                      .col-md-4
+                        strong Branch: 
+                        | #{tx.branch}
+                    if tx.condition
+                      .col-md-4
+                        strong Condition: 
+                        | #{tx.condition}
+                    if tx.reason
+                      .col-md-6
+                        strong Reason: 
+                        | #{tx.reason}
+                    if tx.remarks
+                      .col-12.text-muted
+                        strong Remarks: 
+                        | #{tx.remarks}

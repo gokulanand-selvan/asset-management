@@ -1,0 +1,124 @@
+extends ../layout.jade
+
+block content
+  .row.g-4.mb-4
+    .col-lg-5
+      .card
+        .card-header
+          i.bi.bi-arrow-return-left.me-2.text-warning
+          | Return Asset from Employee
+        .card-body
+          if issuedAssets.length === 0
+            .alert.alert-info.mb-0 No assets are currently issued to employees.
+          else
+            form(method="POST", action="/return")
+              .mb-3
+                label.form-label Issued Asset *
+                select#returnAssetId.form-select(name="assetId", required)
+                  option(value="") -- Choose Issued Asset --
+                  each asset in issuedAssets
+                    option(
+                      value=asset.id,
+                      selected=(preselectedAssetId === asset.id)
+                    )= `${asset.assetTag} | ${asset.make} ${asset.model} — ${asset.currentEmployee ? asset.currentEmployee.firstName + ' ' + asset.currentEmployee.lastName : ''}`
+              .row.g-3.mb-3
+                .col-md-6
+                  label.form-label Return Reason *
+                  select#returnReason.form-select(name="reason", required)
+                    option(value="Upgrade") Upgrade
+                    option(value="Repair") Repair
+                    option(value="Resignation") Resignation
+                    option(value="Transfer") Transfer
+                    option(value="End of Project") End of Project
+                    option(value="Damaged") Damaged
+                    option(value="Other") Other
+                .col-md-6
+                  label.form-label Return Date *
+                  input.form-control(type="date", name="returnDate", value=today, required)
+              #customReasonWrap.mb-3.d-none
+                label.form-label Specify Other Reason
+                input.form-control(type="text", name="customReason", placeholder="Enter return reason")
+              .row.g-3.mb-3
+                .col-md-6
+                  label.form-label Condition on Return
+                  select.form-select(name="condition")
+                    option(value="Good", selected) Good
+                    option(value="Fair") Fair
+                    option(value="Needs Repair") Needs Repair
+                    option(value="Damaged") Damaged
+                .col-md-6
+                  label.form-label Return to Branch *
+                  input#returnBranch.form-control(type="text", name="branch", list="branchList", placeholder="Head Office", required)
+              .mb-3
+                label.form-label Remarks
+                textarea.form-control(name="remarks", rows="2")
+              button.btn.btn-warning.w-100.fw-semibold(type="submit")
+                i.bi.bi-arrow-return-left.me-1
+                | Process Return
+
+    .col-lg-7
+      .card
+        .card-header
+          i.bi.bi-list-check.me-2.text-primary
+          | Currently Issued Assets (#{issuedAssets.length})
+        .card-body
+          .table-responsive
+            table.table.table-hover.align-middle.datatable(data-order-col="0")
+              thead
+                tr
+                  th Unique ID
+                  th Asset
+                  th Employee
+                  th Branch
+                  th.text-end Quick Pick
+              tbody
+                each asset in issuedAssets
+                  tr
+                    td
+                      a.code-pill.text-decoration-none(href=`/history/${asset.id}`)= asset.assetTag
+                    td
+                      .fw-semibold #{asset.make} #{asset.model}
+                      .small.text-muted.font-monospace= asset.serialNumber
+                    td= asset.currentEmployee ? `${asset.currentEmployee.firstName} ${asset.currentEmployee.lastName}` : '-'
+                    td= asset.branch
+                    td.text-end
+                      button.btn.btn-sm.btn-outline-warning.btn-select-return(
+                        type="button",
+                        data-assetid=asset.id,
+                        data-branch=asset.branch
+                      ) Select
+
+  datalist#branchList
+    each b in branches
+      option(value=b)
+
+  .card
+    .card-header
+      i.bi.bi-clock-history.me-2.text-primary
+      | Recent Return History
+    .card-body
+      .table-responsive
+        table.table.table-sm.table-hover.align-middle.datatable(data-order-col="0", data-order-dir="desc")
+          thead
+            tr
+              th Return Date
+              th Asset ID
+              th Asset
+              th Returned By
+              th Reason
+              th Condition
+              th Branch
+              th Remarks
+          tbody
+            each tx in recentReturns
+              tr
+                td= tx.transactionDate
+                td
+                  a.code-pill.text-decoration-none(href=`/history/${tx.assetId}`)= tx.asset.assetTag
+                td #{tx.asset.make} #{tx.asset.model}
+                td= tx.employee ? `${tx.employee.firstName} ${tx.employee.lastName}` : '-'
+                td
+                  span.badge.bg-secondary= tx.reason || '-'
+                td= tx.condition || '-'
+                td= tx.branch || '-'
+                td.small.text-muted= tx.remarks || '-'

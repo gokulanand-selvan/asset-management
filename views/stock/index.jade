@@ -1,0 +1,64 @@
+extends ../layout.jade
+
+block content
+  // Bird's eye branch totals
+  .row.g-3.mb-4
+    each bt in branchTotals
+      .col-sm-6.col-xl-3
+        .card.kpi-card.kpi-success.h-100
+          .card-body
+            .d-flex.justify-content-between.align-items-start
+              div
+                .kpi-label= bt.branch
+                .kpi-value= bt.count
+                .small.text-muted Ready in stock
+              span.badge.bg-success-subtle.text-success-emphasis.fw-semibold= formatCurrency(bt.totalValue)
+
+  .card
+    .card-header.d-flex.justify-content-between.align-items-center
+      span
+        i.bi.bi-building-check.me-2.text-success
+        | Assets in Stock (#{grandTotalCount})
+      a.btn.btn-sm.btn-success(href="/issue")
+        i.bi.bi-box-arrow-up-right.me-1
+        | Issue Stock Asset
+    .card-body
+      .table-responsive
+        table#stockTable.table.table-hover.align-middle
+          thead
+            tr
+              th Unique ID
+              th Serial No.
+              th Category
+              th Branch
+              th Make & Model
+              th Purchase Date
+              th.text-end Value
+              th.text-end Action
+          tbody
+            each asset in assets
+              tr(data-cost=toNumber(asset.purchaseCost, 0))
+                td
+                  a.code-pill.text-decoration-none(href=`/history/${asset.id}`)= asset.assetTag
+                td.font-monospace.small= asset.serialNumber
+                td= asset.category ? asset.category.name : '-'
+                td= asset.branch
+                td #{asset.make} #{asset.model}
+                td= asset.purchaseDate
+                td.text-end= formatCurrency(asset.purchaseCost)
+                td.text-end
+                  a.btn.btn-sm.btn-outline-success(href=`/issue?assetId=${asset.id}`) Issue
+          tfoot
+            tr
+              th(colspan="4")
+                | Branch Totals:
+                each bt in branchTotals
+                  span.ms-2.fw-normal
+                    span.badge.bg-light.text-dark.border
+                      | #{bt.branch}: #{bt.count} (#{formatCurrency(bt.totalValue)})
+              th.text-end(colspan="2")
+                | Total In Stock (
+                span#stockFilteredCount= grandTotalCount
+                | ):
+              th#stockFilteredTotal.text-end= formatCurrency(grandTotalValue)
+              th

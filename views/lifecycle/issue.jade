@@ -1,0 +1,75 @@
+extends ../layout.jade
+
+block content
+  .row.g-4
+    .col-lg-5
+      .card
+        .card-header
+          i.bi.bi-box-arrow-up-right.me-2.text-primary
+          | Issue Asset to Employee
+        .card-body
+          if availableAssets.length === 0
+            .alert.alert-warning.mb-0 No assets currently in stock to issue.
+          else if activeEmployees.length === 0
+            .alert.alert-warning.mb-0 No active employees available.
+          else
+            form(method="POST", action="/issue")
+              .mb-3
+                label.form-label Select Available Asset (In Stock) *
+                select.form-select(name="assetId", required)
+                  option(value="") -- Choose Asset --
+                  each asset in availableAssets
+                    option(
+                      value=asset.id,
+                      selected=(preselectedAssetId === asset.id)
+                    )= `${asset.assetTag} | ${asset.serialNumber} | ${asset.make} ${asset.model} (${asset.branch})`
+              .mb-3
+                label.form-label Select Active Employee *
+                select.form-select(name="employeeId", required)
+                  option(value="") -- Choose Employee --
+                  each emp in activeEmployees
+                    option(value=emp.id)= `${emp.employeeCode} - ${emp.firstName} ${emp.lastName} (${emp.branch})`
+              .row.g-3.mb-3
+                .col-md-6
+                  label.form-label Issue Date *
+                  input.form-control(type="date", name="issueDate", value=today, required)
+                .col-md-6
+                  label.form-label Condition
+                  select.form-select(name="condition")
+                    option(value="New") New
+                    option(value="Good", selected) Good
+                    option(value="Fair") Fair
+              .mb-3
+                label.form-label Remarks
+                textarea.form-control(name="remarks", rows="2")
+              button.btn.btn-primary.w-100(type="submit")
+                i.bi.bi-check2-circle.me-1
+                | Issue Asset
+
+    .col-lg-7
+      .card
+        .card-header
+          i.bi.bi-person-badge.me-2.text-primary
+          | Currently Issued Assets (#{issuedAssets.length})
+        .card-body
+          .table-responsive
+            table.table.table-hover.align-middle.datatable(data-order-col="0")
+              thead
+                tr
+                  th Unique ID
+                  th Asset
+                  th Category
+                  th Issued To
+                  th.text-end Action
+              tbody
+                each asset in issuedAssets
+                  tr
+                    td
+                      a.code-pill.text-decoration-none(href=`/history/${asset.id}`)= asset.assetTag
+                    td
+                      .fw-semibold #{asset.make} #{asset.model}
+                      .small.text-muted.font-monospace= asset.serialNumber
+                    td= asset.category ? asset.category.name : '-'
+                    td= asset.currentEmployee ? `${asset.currentEmployee.firstName} ${asset.currentEmployee.lastName} (${asset.currentEmployee.employeeCode})` : '-'
+                    td.text-end
+                      a.btn.btn-sm.btn-outline-warning(href=`/return?assetId=${asset.id}`) Return

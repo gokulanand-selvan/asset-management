@@ -1,0 +1,173 @@
+extends ../layout.jade
+
+block content
+  .card.mb-4
+    .card-body
+      form.row.g-3.align-items-end(method="GET", action="/employees")
+        .col-md-4
+          label.form-label.small.fw-semibold Employee Status
+          select.form-select(name="status")
+            option(value="all", selected=(filters.status === 'all')) All Employees
+            option(value="active", selected=(filters.status === 'active')) Active Only
+            option(value="inactive", selected=(filters.status === 'inactive')) Inactive Only
+        .col-md-4.d-flex.gap-2
+          button.btn.btn-primary(type="submit")
+            i.bi.bi-funnel.me-1
+            | Filter
+          a.btn.btn-outline-secondary(href="/employees") Reset
+        .col-md-4.text-md-end
+          button.btn.btn-success(type="button", data-bs-toggle="modal", data-bs-target="#addEmployeeModal")
+            i.bi.bi-person-plus.me-1
+            | Add Employee
+
+  .card
+    .card-header
+      i.bi.bi-people.me-2.text-primary
+      | Employees (#{employees.length})
+    .card-body
+      .table-responsive
+        table#employeesTable.table.table-hover.align-middle.datatable(data-order-col="0")
+          thead
+            tr
+              th Code
+              th Name
+              th Email
+              th Department
+              th Branch
+              th Status
+              th.text-center Held Assets
+              th.text-end Actions
+          tbody
+            each emp in employees
+              tr
+                td
+                  span.code-pill= emp.employeeCode
+                td
+                  .fw-semibold #{emp.firstName} #{emp.lastName}
+                  if emp.designation
+                    .small.text-muted= emp.designation
+                td= emp.email
+                td= emp.department
+                td= emp.branch
+                td
+                  span.badge.badge-status(class=`badge-${emp.status}`)= formatStatusLabel(emp.status)
+                td.text-center
+                  if emp.heldAssets && emp.heldAssets.length > 0
+                    span.badge.bg-primary= emp.heldAssets.length
+                  else
+                    span.text-muted 0
+                td.text-end
+                  button.btn.btn-sm.btn-outline-primary.btn-edit-employee(
+                    type="button",
+                    data-bs-toggle="modal",
+                    data-bs-target="#editEmployeeModal",
+                    data-id=emp.id,
+                    data-code=emp.employeeCode,
+                    data-firstname=emp.firstName,
+                    data-lastname=emp.lastName,
+                    data-email=emp.email,
+                    data-phone=(emp.phone || ''),
+                    data-department=emp.department,
+                    data-designation=(emp.designation || ''),
+                    data-branch=emp.branch,
+                    data-status=emp.status,
+                    data-joineddate=(emp.joinedDate || '')
+                  )
+                    i.bi.bi-pencil.me-1
+                    | Edit
+
+  datalist#branchList
+    each b in branches
+      option(value=b)
+
+  // Add Employee Modal
+  #addEmployeeModal.modal.fade(tabindex="-1", aria-hidden="true")
+    .modal-dialog.modal-lg
+      .modal-content
+        form(method="POST", action="/employees")
+          .modal-header
+            h5.modal-title Add Employee
+            button.btn-close(type="button", data-bs-dismiss="modal")
+          .modal-body
+            .row.g-3
+              .col-md-4
+                label.form-label Employee Code *
+                input.form-control(type="text", name="employeeCode", placeholder="EMP-006", required)
+              .col-md-4
+                label.form-label First Name *
+                input.form-control(type="text", name="firstName", required)
+              .col-md-4
+                label.form-label Last Name *
+                input.form-control(type="text", name="lastName", required)
+              .col-md-6
+                label.form-label Email *
+                input.form-control(type="email", name="email", required)
+              .col-md-6
+                label.form-label Phone
+                input.form-control(type="text", name="phone")
+              .col-md-4
+                label.form-label Department *
+                input.form-control(type="text", name="department", required)
+              .col-md-4
+                label.form-label Designation
+                input.form-control(type="text", name="designation")
+              .col-md-4
+                label.form-label Branch *
+                input.form-control(type="text", name="branch", list="branchList", placeholder="Head Office", required)
+              .col-md-4
+                label.form-label Status
+                select.form-select(name="status")
+                  option(value="active", selected) Active
+                  option(value="inactive") Inactive
+              .col-md-4
+                label.form-label Joined Date
+                input.form-control(type="date", name="joinedDate")
+          .modal-footer
+            button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancel
+            button.btn.btn-primary(type="submit") Save Employee
+
+  // Edit Employee Modal
+  #editEmployeeModal.modal.fade(tabindex="-1", aria-hidden="true")
+    .modal-dialog.modal-lg
+      .modal-content
+        form#editEmployeeForm(method="POST", action="/employees/0")
+          .modal-header
+            h5.modal-title Edit Employee
+            button.btn-close(type="button", data-bs-dismiss="modal")
+          .modal-body
+            .row.g-3
+              .col-md-4
+                label.form-label Employee Code *
+                input#editEmpCode.form-control(type="text", name="employeeCode", required)
+              .col-md-4
+                label.form-label First Name *
+                input#editEmpFirstName.form-control(type="text", name="firstName", required)
+              .col-md-4
+                label.form-label Last Name *
+                input#editEmpLastName.form-control(type="text", name="lastName", required)
+              .col-md-6
+                label.form-label Email *
+                input#editEmpEmail.form-control(type="email", name="email", required)
+              .col-md-6
+                label.form-label Phone
+                input#editEmpPhone.form-control(type="text", name="phone")
+              .col-md-4
+                label.form-label Department *
+                input#editEmpDepartment.form-control(type="text", name="department", required)
+              .col-md-4
+                label.form-label Designation
+                input#editEmpDesignation.form-control(type="text", name="designation")
+              .col-md-4
+                label.form-label Branch *
+                input#editEmpBranch.form-control(type="text", name="branch", list="branchList", required)
+              .col-md-4
+                label.form-label Status
+                select#editEmpStatus.form-select(name="status")
+                  option(value="active") Active
+                  option(value="inactive") Inactive
+              .col-md-4
+                label.form-label Joined Date
+                input#editEmpJoinedDate.form-control(type="date", name="joinedDate")
+          .modal-footer
+            button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancel
+            button.btn.btn-primary(type="submit") Update Employee

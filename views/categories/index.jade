@@ -1,0 +1,97 @@
+extends ../layout.jade
+
+block content
+  .card
+    .card-header.d-flex.justify-content-between.align-items-center
+      span
+        i.bi.bi-tags.me-2.text-primary
+        | Asset Categories (#{categories.length})
+      button.btn.btn-sm.btn-primary(type="button", data-bs-toggle="modal", data-bs-target="#addCategoryModal")
+        i.bi.bi-plus-lg.me-1
+        | Add Category
+    .card-body
+      .table-responsive
+        table#categoriesTable.table.table-hover.align-middle.datatable(data-order-col="1")
+          thead
+            tr
+              th Code
+              th Category Name
+              th Description
+              th.text-center Active Assets
+              th Status
+              th.text-end Actions
+          tbody
+            each cat in categories
+              - const activeAssetCount = cat.assets ? cat.assets.length : 0
+              tr
+                td
+                  span.code-pill= cat.code
+                td.fw-semibold= cat.name
+                td.text-muted= cat.description || '-'
+                td.text-center
+                  span.badge.bg-primary= activeAssetCount
+                td
+                  span.badge.badge-status(class=(cat.isActive ? 'badge-active' : 'badge-inactive'))= cat.isActive ? 'Active' : 'Inactive'
+                td.text-end
+                  button.btn.btn-sm.btn-outline-primary.btn-edit-category(
+                    type="button",
+                    data-bs-toggle="modal",
+                    data-bs-target="#editCategoryModal",
+                    data-id=cat.id,
+                    data-code=cat.code,
+                    data-name=cat.name,
+                    data-description=(cat.description || ''),
+                    data-active=(cat.isActive ? 'true' : 'false')
+                  )
+                    i.bi.bi-pencil.me-1
+                    | Edit
+
+  // Add Category Modal
+  #addCategoryModal.modal.fade(tabindex="-1", aria-hidden="true")
+    .modal-dialog
+      .modal-content
+        form(method="POST", action="/categories")
+          .modal-header
+            h5.modal-title Add Asset Category
+            button.btn-close(type="button", data-bs-dismiss="modal")
+          .modal-body
+            .mb-3
+              label.form-label Category Code *
+              input.form-control(type="text", name="code", placeholder="e.g. TAB", required)
+            .mb-3
+              label.form-label Category Name *
+              input.form-control(type="text", name="name", placeholder="e.g. Tablet, Screw Driver, Drill Machine", required)
+            .mb-3
+              label.form-label Description
+              textarea.form-control(name="description", rows="2")
+            .form-check
+              input#addCatActive.form-check-input(type="checkbox", name="isActive", value="true", checked)
+              label.form-check-label(for="addCatActive") Active
+          .modal-footer
+            button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancel
+            button.btn.btn-primary(type="submit") Save Category
+
+  // Edit Category Modal
+  #editCategoryModal.modal.fade(tabindex="-1", aria-hidden="true")
+    .modal-dialog
+      .modal-content
+        form#editCategoryForm(method="POST", action="/categories/0")
+          .modal-header
+            h5.modal-title Edit Asset Category
+            button.btn-close(type="button", data-bs-dismiss="modal")
+          .modal-body
+            .mb-3
+              label.form-label Category Code *
+              input#editCatCode.form-control(type="text", name="code", required)
+            .mb-3
+              label.form-label Category Name *
+              input#editCatName.form-control(type="text", name="name", required)
+            .mb-3
+              label.form-label Description
+              textarea#editCatDescription.form-control(name="description", rows="2")
+            .form-check
+              input#editCatActive.form-check-input(type="checkbox", name="isActive", value="true")
+              label.form-check-label(for="editCatActive") Active
+          .modal-footer
+            button.btn.btn-secondary(type="button", data-bs-dismiss="modal") Cancel
+            button.btn.btn-primary(type="submit") Update Category

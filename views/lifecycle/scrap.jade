@@ -1,0 +1,79 @@
+extends ../layout.jade
+
+block content
+  .alert.alert-warning.d-flex.align-items-center.gap-2.mb-4
+    i.bi.bi-exclamation-triangle-fill.fs-5
+    div
+      strong Note: 
+      | Once an asset is marked as obsolete/scrapped, it will no longer be visible in any page except Reports.
+
+  .row.g-4
+    .col-lg-5
+      .card
+        .card-header.text-danger
+          i.bi.bi-trash3.me-2
+          | Mark Asset as Obsolete / Scrap
+        .card-body
+          if eligibleAssets.length === 0
+            .alert.alert-info.mb-0 No in-stock assets available to scrap.
+          else
+            form(method="POST", action="/scrap")
+              .mb-3
+                label.form-label Select Asset *
+                select#scrapAssetId.form-select(name="assetId", required)
+                  option(value="") -- Choose Asset --
+                  each asset in eligibleAssets
+                    option(
+                      value=asset.id,
+                      selected=(preselectedAssetId === asset.id)
+                    )= `${asset.assetTag} | ${asset.serialNumber} | ${asset.make} ${asset.model}`
+              .row.g-3.mb-3
+                .col-md-6
+                  label.form-label Scrap Date *
+                  input.form-control(type="date", name="scrapDate", value=today, required)
+                .col-md-6
+                  label.form-label Salvage Value
+                  input.form-control(type="number", step="0.01", min="0", name="salvageValue", value="0")
+              .mb-3
+                label.form-label Reason *
+                input.form-control(type="text", name="reason", placeholder="e.g. End of life, Beyond repair", required)
+              .mb-3
+                label.form-label Remarks
+                textarea.form-control(name="remarks", rows="2")
+              button.btn.btn-danger.w-100(type="submit", onclick="return confirm('Mark this asset as obsolete/scrapped?');")
+                i.bi.bi-trash3.me-1
+                | Confirm Scrap Asset
+          if issuedCount > 0
+            .small.text-muted.mt-3
+              i.bi.bi-info-circle.me-1
+              | #{issuedCount} currently issued asset(s) must be returned before scrapping.
+
+    .col-lg-7
+      .card
+        .card-header
+          i.bi.bi-box-seam.me-2.text-primary
+          | Eligible In-Stock Assets (#{eligibleAssets.length})
+        .card-body
+          .table-responsive
+            table.table.table-hover.align-middle.datatable(data-order-col="0")
+              thead
+                tr
+                  th Unique ID
+                  th Serial No.
+                  th Asset
+                  th Branch
+                  th.text-end Purchase Cost
+                  th.text-end Action
+              tbody
+                each asset in eligibleAssets
+                  tr
+                    td
+                      a.code-pill.text-decoration-none(href=`/history/${asset.id}`)= asset.assetTag
+                    td.font-monospace.small= asset.serialNumber
+                    td
+                      .fw-semibold #{asset.make} #{asset.model}
+                      .small.text-muted= asset.category ? asset.category.name : '-'
+                    td= asset.branch
+                    td.text-end= formatCurrency(asset.purchaseCost)
+                    td.text-end
+                      button.btn.btn-sm.btn-outline-danger.btn-select-scrap(type="button", data-assetid=asset.id) Select
